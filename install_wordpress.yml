@@ -1,0 +1,35 @@
+---
+- hosts: hosts
+  become: yes
+  vars:
+    wordpress_path: /var/www/wordpress
+    name_of_project: WPProject
+  tasks:
+    - include_tasks: instalations.yml
+    - include_tasks: wpFile.yml
+    - name: "Start service mariadb"
+      service:
+        name: mariadb
+        state: started
+    - name: "Create a new database with project name"
+      mysql_db:
+        name: "{{name_of_project}}"
+        state: present
+    - name: "Create user name"
+      mysql_user:
+        name: "{{name_of_project}}"
+        password: 12345
+        priv: '*.*:ALL,GRANT'
+        state: present
+    - name: "copy apache cfg"
+      template:
+        src: templates/blog.conf
+        dest: /etc/httpd/conf.d/blog.conf
+    - name: "Start service httpd"
+      service:
+        name: httpd
+        state: restarted
+    - name: "copy wp-cofnig.php"
+      copy:
+        src: templates/wp-config.php
+        dest: "{{wordpress_path}}"
